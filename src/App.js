@@ -1,7 +1,6 @@
-
-
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { motion } from "motion/react";
+import Scene from './components/Scene';
 import './index.css';
 
 const itineraryData = [
@@ -56,17 +55,23 @@ const useSwipe = ({ onSwipedUp, onSwipedDown }) => {
 
 function App() {
   const [activeSection, setActiveSection] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const handleSwipeUp = () => {
-    if (activeSection < itineraryData.length - 1) {
-      setActiveSection((prev) => prev + 1);
+  const handleSectionChange = (newIndex) => {
+    if (newIndex !== activeSection && newIndex >= 0 && newIndex < itineraryData.length) {
+      setIsTransitioning(true);
+      setActiveSection(newIndex);
+      // Three.js animation will handle the transition timing
+      setTimeout(() => setIsTransitioning(false), 1000); // Temporary timeout until Three.js is integrated
     }
   };
 
+  const handleSwipeUp = () => {
+    handleSectionChange(activeSection + 1);
+  };
+
   const handleSwipeDown = () => {
-    if (activeSection > 0) {
-      setActiveSection((prev) => prev - 1);
-    }
+    handleSectionChange(activeSection - 1);
   };
 
   const swipeHandlers = useSwipe({
@@ -75,12 +80,23 @@ function App() {
   });
 
   return (
-    <div className="fixed inset-0 w-screen h-screen bg-pink-50">
-      <div className="absolute inset-0 overflow-hidden touch-none" {...swipeHandlers}>
+    <div className="fixed inset-0 w-screen h-screen overflow-hidden">
+      {/* Three.js canvas */}
+      <div className="absolute w-full h-full">
+        <Suspense fallback={<div>Loading...</div>}>
+          <Scene />
+        </Suspense>
+        {/* Debug overlay */}
+        <div className="fixed top-0 left-0 bg-black bg-opacity-50 text-white p-2 z-50 font-mono text-xs">
+          <div>Section: {activeSection}</div>
+          <div>Transitioning: {isTransitioning.toString()}</div>
+        </div>
+      </div>
+      {/*<div className="absolute inset-0 overflow-hidden touch-none" {...swipeHandlers}>
         {itineraryData.map((section, index) => (
           <motion.div
             key={section.id}
-            className={`absolute inset-0 flex items-center justify-center bg-pink-200 rounded-lg ${
+            className={`absolute inset-0 flex items-center justify-center rounded-lg ${
               index === activeSection ? "z-20" : "z-10"
             }`}
             initial={false}
@@ -95,14 +111,14 @@ function App() {
               damping: 30,
             }}
           >
-            <div className="h-full w-full flex flex-col items-center justify-center p-6">
-              <h2 className="text-4xl font-bold text-gray-800 mb-2">{section.title}</h2>
-              <h3 className="text-xl text-gray-600 mb-8">{section.time}</h3>
+            <div className="h-half w-full flex flex-col items-center justify-center p-6 bg-black bg-opacity-50">
+              <h2 className="text-4xl font-bold text-white mb-2">{section.title}</h2>
+              <h3 className="text-xl text-gray-200 mb-8">{section.time}</h3>
               <ul className="w-full max-w-md space-y-4">
                 {section.activities.map((activity, idx) => (
                   <motion.li
                     key={idx}
-                    className="py-3 border-b border-gray-200 last:border-b-0 text-gray-700 text-center"
+                    className="py-3 border-b border-gray-300 last:border-b-0 text-white text-center"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{
                       opacity: index === activeSection ? 1 : 0,
@@ -122,14 +138,14 @@ function App() {
             <motion.button
               key={index}
               className={`w-3 h-3 rounded-full transition-colors duration-200 ${
-                index === activeSection ? "bg-gray-800" : "bg-gray-300 hover:bg-gray-400"
+                index === activeSection ? "bg-white" : "bg-gray-400 hover:bg-gray-300"
               }`}
-              onClick={() => setActiveSection(index)}
+              onClick={() => handleSectionChange(index)}
               whileTap={{ scale: 0.9 }}
             />
           ))}
         </div>
-      </div>
+      </div>*/}
     </div>
   );
 }
