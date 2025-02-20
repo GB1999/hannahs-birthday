@@ -1,12 +1,90 @@
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import styled from 'styled-components'
+// Scene.js
+import React, { useState, useEffect } from 'react';
+import Carousel from 'react-spring-3d-carousel';
+import { config } from 'react-spring';
+import styled from 'styled-components';
+import StarburstItem from './StarburstItem'; // your StarburstItem component
 
 // --------------------------------------------------
-// Sky & Wrapper
+// Background (Sky & Clouds)
 // --------------------------------------------------
 
-// SkyWrapper fills the viewport. Removed negative z-index.
+const CloudLayer1 = styled.div`
+  position: absolute;
+  top: 10vh;
+  left: 0;
+  width: 100%;
+  height: 150vh;
+  background-image: url('/textures/cloud1.png');
+  background-repeat: repeat-x;
+  background-size: contain;
+  opacity: 1.0;
+  z-index: 1;
+  animation: scrollClouds1 60s linear infinite;
+  @keyframes scrollClouds1 {
+    from { transform: translateX(0%); }
+    to { transform: translateX(100%); }
+  }
+`;
+
+// CloudLayer2 positioned lower than CloudLayer1.
+const CloudLayer2 = styled.div`
+  position: absolute;
+  top: 40vh;
+  left: 0;
+  width: 100%;
+  height: 150vh;
+  background-image: url('/textures/cloud2.png');
+  background-repeat: repeat-x;
+  background-size: contain;
+  opacity: 1.0;
+  z-index: 1;
+  animation: scrollClouds2 45s linear infinite;
+  animation-delay: -20s;
+  @keyframes scrollClouds2 {
+    from { transform: translateX(0%); }
+    to { transform: translateX(100%); }
+  }`
+;
+
+// CloudLayer3 positioned even lower.
+const CloudLayer3 = styled.div`
+  position: absolute;
+  top: 70vh;
+  left: 0;
+  width: 100%;
+  height: 150vh;
+  background-image: url('/textures/cloud3.png');
+  background-repeat: repeat-x;
+  background-size: contain;
+  opacity: 1.0;
+  z-index: 1;
+  animation: scrollClouds3 75s linear infinite;
+  animation-delay: -40s;
+  @keyframes scrollClouds3 {
+    from { transform: translateX(0%); }
+    to { transform: translateX(100%); }
+  }`
+;
+
+const CloudLayer4 = styled.div `
+  position: absolute;
+  top: 100vh;
+  left: 0;
+  width: 100%;
+  height: 150vh;
+  background-image: url('/textures/cloud4.png');
+  background-repeat: repeat-x;
+  background-size: contain;
+  opacity: 1.0;
+  z-index: 1;
+  animation: scrollClouds4 75s linear infinite;
+  animation-delay: -40s;
+  @keyframes scrollClouds4 {
+    from { transform: translateX(0%); }
+    to { transform: translateX(100%); }
+  }`
+;
 const SkyWrapper = styled.div`
   position: fixed;
   top: 0;
@@ -15,263 +93,217 @@ const SkyWrapper = styled.div`
   bottom: 0;
   overflow: hidden;
   z-index: 0;
-`
+`;
 
-// ScrollingSky is the animated sky background.
-const ScrollingSky = styled(motion.div)`
+const AnimatedBackground = styled.div`
   position: absolute;
-  top: 0;
-  left: 0;
   width: 100%;
-  height: 300vh; /* tall enough for continuity */
-  background: linear-gradient(to bottom, #87CEEB, #1E90FF);
-  z-index: 0;
-`
-
-// --------------------------------------------------
-// Cloud Layers
-// --------------------------------------------------
-
-const CloudLayer1 = styled.div`
-  position: absolute;
+  height: 300vh;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: url('/textures/cloud1.png');
-  background-repeat: repeat-x;
-  background-size: contain;
-  opacity: 0.7;
-  z-index: 1; /* above sky */
-  animation: scrollClouds1 60s linear infinite;
-  @keyframes scrollClouds1 {
-    from { transform: translateX(0%); }
-    to { transform: translateX(100%); }
-  }
-`
-
-const CloudLayer2 = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: url('/textures/cloud2.png');
-  background-repeat: repeat-x;
-  background-size: contain;
-  opacity: 0.5;
-  z-index: 1;
-  animation: scrollClouds2 45s linear infinite;
-  animation-delay: -20s;
-  @keyframes scrollClouds2 {
-    from { transform: translateX(0%); }
-    to { transform: translateX(100%); }
-  }
-`
-
-const CloudLayer3 = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: url('/textures/cloud3.png');
-  background-repeat: repeat-x;
-  background-size: contain;
-  opacity: 0.3;
-  z-index: 1;
-  animation: scrollClouds3 75s linear infinite;
-  animation-delay: -40s;
-  @keyframes scrollClouds3 {
-    from { transform: translateX(0%); }
-    to { transform: translateX(100%); }
-  }
-`
+  background: linear-gradient(to bottom, #87ceeb, #1e90ff);
+  /* Add cloud layers here if desired */
+`;
 
 // --------------------------------------------------
-// Starburst & Image Sequence
+// Main Content Containers
 // --------------------------------------------------
-const StarburstContainer = styled.div`
+const MainContainer = styled.div`
   position: relative;
-  width: 100%;
-  height: 100vh;
-  z-index: 2; /* above sky and clouds */
-  mask-image: url('/svgs/starburst-mask.svg');
-  mask-size: contain;
-  mask-repeat: no-repeat;
-  mask-position: center;
-  -webkit-mask-image: url('/svgs/starburst-mask.svg');
-  -webkit-mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  -webkit-mask-position: center;
+  z-index: 1; /* Place above background */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center; /* Center content vertically */
+  padding: 1rem;
   background: transparent;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url('/glitter-texture.png');
-    mix-blend-mode: overlay;
-    opacity: 0.5;
-    animation: sparkle 2s linear infinite;
-  }
+`;
 
-  @keyframes sparkle {
-    0% { background-position: 0 0; }
-    100% { background-position: 100% 100%; }
-  }
-`
+const ContentWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem; /* Space between carousel and nav buttons */
+`;
 
-const ImageSequenceContainer = styled.div`
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 512px;
-  height: 512px;
-  z-index: 3; /* above starburst if needed */
-`
-
-const SequenceImage = styled.img`
+// Fixed height for the carousel (matching StarburstItem's 512px)
+const CarouselContainer = styled.div`
   width: 100%;
-  height: 100%;
-  object-fit: contain;
-`
+  max-width: 600px; /* Optional max width */
+  height: 512px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+`;
 
-// --------------------------------------------------
-// Button
-// --------------------------------------------------
-const Button = styled.button`
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 10px 20px;
-  font-size: 16px;
+// Navigation container directly below the carousel
+const NavContainer = styled.div`
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+`;
+
+const NavButton = styled.button`
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
   cursor: pointer;
-  z-index: 4; /* make sure button is clickable */
-`
+`;
 
 // --------------------------------------------------
 // Scene Component
 // --------------------------------------------------
-export default function Scene() {
-  // Mapping of sequence names to their starting frame numbers.
-  const sequenceStartFrames = {
-    'box-idle': 1,
-    'falling': 108,
+// 1) Sample data for each starburst
+const starburstsData = [
+  {
+    id: '1',
+    seqName: 'box-idle',
+    startFrame: 1,
+    title: 'Barbie',
+    description: 'Nicola Coughlan',
+    date: 'July 21',
+  },
+  {
+    id: '2',
+    seqName: 'falling',
+    startFrame: 122,
+    title: 'Coffee & Spin',
+    description: 'Some Other Description',
+    date: 'July 22',
+  },
+  {
+    id: '3',
+    seqName: 'box-idle',
+    startFrame: 1,
+    title: 'Third Starburst',
+    description: 'Yet Another Person',
+    date: 'July 23',
+  },
+];
+
+// 2) Preloading function (similar to your original)
+async function preloadSequence(seqName, start) {
+  const urls = [];
+  let count = start;
+  const safetyLimit = start + 1000;
+  while (count < safetyLimit) {
+    const url = `/image-sequences/${seqName}/${String(count).padStart(4, '0')}.png`;
+    try {
+      await preloadImage(url);
+      urls.push(url);
+      count++;
+    } catch {
+      break;
+    }
   }
+  return urls;
+}
 
-  // States for active sequence, frame index (zero-based), and total frames.
-  const [activeSequence, setActiveSequence] = useState("box-idle")
-  const [currentFrameIndex, setCurrentFrameIndex] = useState(0)
-  const [totalFrames, setTotalFrames] = useState(0)
-  const frameRate = 30 // Frames per second
+function preloadImage(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.src = url;
+    img.onload = () => resolve(url);
+    img.onerror = () => reject(url);
+  });
+}
 
-  // Determine the starting frame number for the current sequence.
-  const sequenceStart = sequenceStartFrames[activeSequence] || 1
+const Scene = () => {
+  const [goToSlide, setGoToSlide] = useState(0);
+  const [preloadedSequences, setPreloadedSequences] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  // Count valid frames when activeSequence changes.
+  // 3) Preload all sequences once, store in preloadedSequences
   useEffect(() => {
-    setCurrentFrameIndex(0)
-    const countFrames = async () => {
-      let count = sequenceStart
-      while (count < sequenceStart + 1000) {
-        const url = `/image-sequences/${activeSequence}/${count.toString().padStart(4, '0')}.png`
-        try {
-          const response = await fetch(url)
-          const contentType = response.headers.get('content-type')
-          if (!response.ok || !contentType || !contentType.startsWith('image/')) {
-            console.log(`Not a valid image or error: ${url}`)
-            break
-          }
-          console.log(`Fetched valid image: ${url}`)
-          count++
-        } catch (error) {
-          console.error(`Error fetching ${url}:`, error)
-          break
+    async function loadAllSequences() {
+      // We’ll create a temporary object to hold frames for each seqName
+      const sequencesMap = {};
+
+      // For each starburst, load if not already loaded
+      for (const item of starburstsData) {
+        const { seqName, startFrame } = item;
+
+        // Only load if we haven't loaded that seqName yet
+        if (!sequencesMap[seqName]) {
+          const frames = await preloadSequence(seqName, startFrame);
+          sequencesMap[seqName] = frames;
         }
       }
-      const framesFound = count - sequenceStart
-      console.log(`Found ${framesFound} frames for sequence "${activeSequence}"`)
-      setTotalFrames(framesFound)
+
+      setPreloadedSequences(sequencesMap);
+      setLoading(false);
     }
-    
-    countFrames()
-  }, [activeSequence, sequenceStart])
 
-  // Update current frame index on an interval.
-  useEffect(() => {
-    if (totalFrames === 0) {
-      console.log("No frames found")
-      return
-    }
-    const interval = setInterval(() => {
-      setCurrentFrameIndex((prevIndex) => {
-        if (activeSequence === "falling") {
-          if (prevIndex < totalFrames - 1) {
-            return prevIndex + 1
-          } else {
-            clearInterval(interval)
-            console.log("Falling sequence complete.")
-            return prevIndex
-          }
-        } else {
-          return (prevIndex + 1) % totalFrames
-        }
-      })
-    }, 1000 / frameRate)
-    
-    return () => clearInterval(interval)
-  }, [totalFrames, activeSequence, frameRate])
+    loadAllSequences();
+  }, []);
 
-  // Calculate the actual frame number for the filename.
-  const actualFrameNumber = sequenceStart + currentFrameIndex
-
-  // Animate the sky background upward slightly when falling.
-  const fallingDuration =
-    activeSequence === "falling" && totalFrames > 0 ? totalFrames / frameRate : 0
-  const scrollDistance = "-50vh" // adjust as needed
-
-  const skyVariants = {
-    idle: { y: 0 },
-    falling: {
-      y: scrollDistance,
-      transition: { duration: fallingDuration, ease: "linear" },
-    },
+  // 4) If still loading, show a simple spinner or message
+  if (loading) {
+    return <div>Loading sequences...</div>;
   }
 
-  return (
-    <>
-      <SkyWrapper>
-        <ScrollingSky
-          variants={skyVariants}
-          animate={activeSequence === "falling" ? "falling" : "idle"}
+
+  // Map starburst data to the slides for the carousel
+  const slides = starburstsData.map((item, index) => {
+    const frames = preloadedSequences[item.seqName] || [];
+
+    return {
+      key: item.id,
+      content: (
+        <StarburstItem
+          frames={frames}
+          title={item.title}
+          description={item.description}
+          date={item.date}
+          isActive={index === goToSlide}
         />
-        <CloudLayer1 />
-        <CloudLayer2 />
-        <CloudLayer3 />
+      ),
+    };
+  });
+
+  const handleNext = () => {
+    setGoToSlide((prev) => (prev + 1) % starburstsData.length);
+  };
+
+  const handlePrev = () => {
+    setGoToSlide((prev) =>
+      prev === 0 ? starburstsData.length - 1 : prev - 1
+    );
+  };
+
+    return (
+    <>
+      {/* Background */}
+      <SkyWrapper>
+        <AnimatedBackground>
+          {/* Optional: add cloud layers here */}
+          <CloudLayer1 />
+          <CloudLayer2 />
+          <CloudLayer3 />
+          <CloudLayer4 />
+        </AnimatedBackground>
       </SkyWrapper>
-      <StarburstContainer>
-        <ImageSequenceContainer>
-          {totalFrames > 0 && (
-            <SequenceImage 
-              src={`/image-sequences/${activeSequence}/${actualFrameNumber
-                .toString()
-                .padStart(4, '0')}.png`}
-              alt={`Frame ${actualFrameNumber}`}
+
+      {/* Main content including carousel and navigation */}
+      <MainContainer>
+        <ContentWrapper>
+          <CarouselContainer>
+            <Carousel
+              slides={slides}
+              goToSlide={goToSlide}
+              offsetRadius={2}
+              showNavigation={false} // We use custom nav buttons
+              animationConfig={config.gentle}
             />
-          )}
-        </ImageSequenceContainer>
-      </StarburstContainer>
-      {activeSequence === "box-idle" && (
-        <Button onClick={() => setActiveSequence("falling")}>
-          Play Falling Sequence
-        </Button>
-      )}
+          </CarouselContainer>
+          <NavContainer>
+            <NavButton onClick={handlePrev}>Previous</NavButton>
+            <NavButton onClick={handleNext}>Next</NavButton>
+          </NavContainer>
+        </ContentWrapper>
+      </MainContainer>
     </>
-  )
-}
+  );
+};
+
+export default Scene;

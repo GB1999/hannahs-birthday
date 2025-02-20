@@ -2,7 +2,7 @@ import React, { useState, Suspense } from "react";
 import { motion } from "motion/react";
 import Scene from './components/Scene';
 import './index.css';
-
+import { GlobalStyle } from './GlobalStyle';
 const itineraryData = [
   {
     id: 1,
@@ -81,6 +81,7 @@ function App() {
 
   return (
     <div className="fixed inset-0 w-screen h-screen overflow-hidden">
+      <GlobalStyle />
       {/* Three.js canvas */}
       <div className="absolute w-full h-full">
         <Suspense fallback={<div>Loading...</div>}>
