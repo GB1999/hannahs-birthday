@@ -1,15 +1,30 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import styled from 'styled-components';
 
 // --------------------------------------------------
-// Masked Container (Starburst Shape)
+// Outer Wrapper: 312x512 total
 // --------------------------------------------------
-const StarburstContainer = styled(motion.div)`
+const StarburstItemWrapper = styled.div`
   position: relative;
-  width: 512px;
+  width: 312px;
   height: 512px;
   margin: 0 auto;
+  bottom: 0;
+`;
+
+// --------------------------------------------------
+// BackgroundLayer: star mask (312x512 if you want the entire area masked)
+// --------------------------------------------------
+const BackgroundLayer = styled(motion.div)`
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 312px;
+  height: 512px;
+  z-index: 0;
+
+  /* Full star mask for the entire 312x512 area */
   mask-image: url('/svgs/starburst-mask.svg');
   mask-size: contain;
   mask-repeat: no-repeat;
@@ -18,8 +33,14 @@ const StarburstContainer = styled(motion.div)`
   -webkit-mask-size: contain;
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-position: center;
-  background: transparent;
 
+  /* Background behind star shape */
+  background: ${({ backgroundImage }) =>
+    backgroundImage
+      ? `url(${backgroundImage}) center/cover no-repeat`
+      : 'transparent'};
+
+  /* Optional glitter overlay */
   &::before {
     content: '';
     position: absolute;
@@ -29,29 +50,42 @@ const StarburstContainer = styled(motion.div)`
     opacity: 0.5;
     animation: sparkle 2s linear infinite;
   }
-
   @keyframes sparkle {
     0% { background-position: 0 0; }
     100% { background-position: 100% 100%; }
   }
 `;
 
-const StarburstWrapper = styled.div`
-  position: relative;
-  width: 100%;
-  height: 100%;
-`;
-
 // --------------------------------------------------
-// Image Sequence Container
+// PartialMaskLayer: uses your 312x512 partial mask
+// (top portion unmasked, bottom portion star-shaped)
 // --------------------------------------------------
-const ImageSequenceContainer = styled.div`
+const PartialMaskLayer = styled(motion.div)`
   position: absolute;
-  top: 0;
+  bottom: 100px;
   left: 0;
-  width: 512px;
+  width: 312px;
   height: 512px;
   z-index: 1;
+
+  /* Now 312x512 partial mask */
+  mask-image: url('/svgs/starburst-mask-half.svg');
+  mask-size: cover;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-image: url('/svgs/starburst-mask-half.svg');
+  -webkit-mask-size: cover;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+`;
+
+// The image container & image both fill 312x512
+const SequenceContainer = styled.div`
+  position: absolute;
+  top: 100px;
+  left: 0;
+  width: 312px;
+  height: 512px;
 `;
 
 const SequenceImage = styled.img`
@@ -61,107 +95,70 @@ const SequenceImage = styled.img`
 `;
 
 // --------------------------------------------------
-// Text Layer
+// Text Layer: unmasked
 // --------------------------------------------------
 const TextGroup = styled(motion.div)`
   position: absolute;
-  inset: 0; /* fill the entire starburst area */
+  inset: 0;
   z-index: 2;
-  pointer-events: none; /* text won't block clicks on the starburst if that's desired */
+  pointer-events: none;
   font-family: sans-serif;
   color: #fff;
-  text-shadow: 1px 1px 4px rgba(0,0,0,0.7);
 `;
 
-/** 
- * Title: Centered (horizontally & vertically)
- */
 const Title = styled.p`
   font-family: 'Bartex', sans-serif;
-  font-size: 2rem;
+  font-size: 4rem;
+  line-height: 3.5rem;
   position: absolute;
-  top: 50%;
+  top: 60%;
   left: 50%;
   margin: 0;
-  font-size: 5rem;
- line-height: 5rem;
- transform:  translateX(-50%) translateY(-50%) rotate(-10deg);
-
-
+  transform: translate(-50%, -50%) rotate(-10deg);
+  text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
 `;
 
-/** 
- * Description: Top-right corner, but text is left-aligned 
- */
 const Description = styled.p`
   font-family: 'CaviarDreams_Bold', sans-serif;
   position: absolute;
-  top: 10%;
-  right: 10%;
+  top: 30%;
+  right: -10%;
   margin: 0;
-  text-align: left; 
+  text-align: left;
   font-size: 1.2rem;
-  max-width: 40%; /* limit width if you want to avoid wrapping too far */
+  max-width: 40%;
 `;
 
-/** 
- * Date: Bottom center
- */
-const Date = styled.p`
+const Details = styled.p`
   position: absolute;
-  bottom: 5%;
+  top: 85%;
   left: 50%;
   transform: translateX(-50%);
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.6rem;
+  line-height: 1.5rem;
+  text-align: center;
+  color: #F462AF;
+  font-family: 'Bartex', sans-serif;
 `;
-
-// --------------------------------------------------
-// Image Preloading
-// --------------------------------------------------
-const preloadImage = (url) =>
-  new Promise((resolve, reject) => {
-    const img = new Image();
-    img.src = url;
-    img.onload = () => resolve(url);
-    img.onerror = () => reject(url);
-  });
-
-async function preloadSequence(seqName, start) {
-  const urls = [];
-  let count = start;
-  const safetyLimit = start + 1000;
-  while (count < safetyLimit) {
-    const url = `/image-sequences/${seqName}/${String(count).padStart(4, '0')}.png`;
-    try {
-      await preloadImage(url);
-      urls.push(url);
-      count++;
-    } catch {
-      break;
-    }
-  }
-  return urls;
-}
 
 // --------------------------------------------------
 // StarburstItem Component
 // --------------------------------------------------
 const StarburstItem = ({
- frames,
+  frames,
   title,
   description,
-  date,
+  details,
   isActive,
+  backgroundImage
 }) => {
-  
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   const frameRate = 12;
 
-  // Only preload + animate if active in the carousel
+  // Animate frames if active
   useEffect(() => {
     if (!isActive || !frames || frames.length === 0) return;
-
     let animationFrameId;
     let startTime = null;
     const totalFrames = frames.length;
@@ -188,33 +185,43 @@ const StarburstItem = ({
   };
 
   return (
-    <StarburstContainer
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={isActive ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-      transition={{ duration: 0.8 }}
-    >
-      <StarburstWrapper>
-        <ImageSequenceContainer>
+    <StarburstItemWrapper>
+      {/* Star mask for background (312x512) */}
+      <BackgroundLayer
+        backgroundImage={backgroundImage}
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={isActive ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
+        transition={{ duration: 0.8 }}
+      />
+
+      {/* Partial star mask for the image (312x512) */}
+      <PartialMaskLayer
+        initial={{ opacity: 0 }}
+        animate={isActive ? { opacity: 1 } : { opacity: 0 }}
+        transition={{ duration: 0.8 }}
+      >
+        <SequenceContainer>
           {frames && frames.length > 0 && (
             <SequenceImage
               src={frames[currentFrameIndex]}
               alt={`Frame ${currentFrameIndex}`}
             />
           )}
-        </ImageSequenceContainer>
+        </SequenceContainer>
+      </PartialMaskLayer>
 
-        <TextGroup
-          variants={textVariants}
-          initial="hidden"
-          animate={isActive ? 'visible' : 'hidden'}
-          transition={{ duration: 0.8, delay: 0.2 }}
-        >
-          <Title>{title}</Title>
-          <Description>{description}</Description>
-          <Date>{date}</Date>
-        </TextGroup>
-      </StarburstWrapper>
-    </StarburstContainer>
+      {/* Unmasked text */}
+      <TextGroup
+        variants={textVariants}
+        initial="hidden"
+        animate={isActive ? 'visible' : 'hidden'}
+        transition={{ duration: 0.8, delay: 0.2 }}
+      >
+        <Title>{title}</Title>
+        <Description>{description}</Description>
+        <Details>{details}</Details>
+      </TextGroup>
+    </StarburstItemWrapper>
   );
 };
 
